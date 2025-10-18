@@ -246,7 +246,8 @@
             border: 1px solid #feb2b2;
         }
 
-        .loading {n            display: none;
+        .loading {
+            display: none;
             text-align: center;
             padding: 20px;
         }
@@ -389,9 +390,8 @@
     </div>
 
     <script>
-        // OpenWeatherMap API 密钥（使用免费的示例密钥，实际使用时应替换为您自己的密钥）
-        const API_KEY = '11e779d255fc9a7b4b09ca1ff4298123';
-        const BASE_URL = 'https://api.openweathermap.org/data/2.5';
+        // 使用提供的免费天气API
+        const WEATHER_API_URL = 'https://v2.xxapi.cn/api/weather';
 
         // DOM 元素
         const weatherForm = document.getElementById('weather-form');
@@ -414,15 +414,12 @@
                 forecastSection.style.display = 'none';
                 
                 try {
-                    // 获取当前天气和预报数据
-                    const [currentWeather, forecast] = await Promise.all([
-                        getCurrentWeather(city),
-                        getWeatherForecast(city)
-                    ]);
+                    // 获取天气数据
+                    const weatherData = await getWeatherData(city);
                     
                     // 显示结果
-                    displayCurrentWeather(currentWeather);
-                    displayWeatherForecast(forecast);
+                    displayCurrentWeather(weatherData);
+                    displayWeatherForecast(weatherData);
                     weatherResult.style.display = 'block';
                     forecastSection.style.display = 'block';
                 } catch (error) {
@@ -434,75 +431,78 @@
             }
         });
 
-        // 获取当前天气数据
-        async function getCurrentWeather(city) {
-            const url = `${BASE_URL}/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=zh_cn`;
-            const response = await fetch(url);
+        // 获取天气数据（包含当前和预报）
+        async function getWeatherData(city) {
+            const url = `${WEATHER_API_URL}?city=${encodeURIComponent(city)}`;
+            const response = await fetch(url, {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             
             if (!response.ok) {
                 throw new Error('无法获取天气数据');
             }
             
-            return await response.json();
-        }
-
-        // 获取天气预报数据
-        async function getWeatherForecast(city) {
-            const url = `${BASE_URL}/forecast?q=${encodeURIComponent(city)}&appid=${API_KEY}&units=metric&lang=zh_cn`;
-            const response = await fetch(url);
+            const data = await response.json();
             
-            if (!response.ok) {
-                throw new Error('无法获取预报数据');
+            if (data.code !== 200) {
+                throw new Error(data.msg || '获取天气数据失败');
             }
             
-            return await response.json();
+            return data;
         }
 
         // 显示当前天气
         function displayCurrentWeather(data) {
+            // 获取今天的天气数据
+            const todayWeather = data.data.data[0];
+            
             // 更新城市名称和日期
-            document.getElementById('city-name').textContent = `${data.name}, ${data.sys.country}`;
+            document.getElementById('city-name').textContent = data.data.city;
             
             const now = new Date();
             document.getElementById('date-info').textContent = `更新时间：${formatDate(now)}`;
             
-            // 更新天气图标和描述
-            const weatherIconUrl = `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`;
+            // 设置天气图标（基于天气描述）
+            const weatherIconUrl = getWeatherIcon(todayWeather.weather);
             document.getElementById('weather-icon').src = weatherIconUrl;
-            document.getElementById('weather-icon').alt = data.weather[0].description;
+            document.getElementById('weather-icon').alt = todayWeather.weather;
             
-            // 更新温度和描述
-            document.getElementById('temperature').textContent = `${Math.round(data.main.temp)}°`;
-            document.getElementById('weather-description').textContent = data.weather[0].description;
+            // 提取温度范围中的第一个温度作为当前温度显示
+            const temperatureRange = todayWeather.temperature;
+            const currentTemp = temperatureRange.split('-')[0];
+            document.getElementById('temperature').textContent = `${currentTemp}°`;
+            document.getElementById('weather-description').textContent = todayWeather.weather;
             
             // 更新详细信息
-            document.getElementById('feels-like').textContent = `${Math.round(data.main.feels_like)}°C`;
-            document.getElementById('humidity').textContent = `${data.main.humidity}%`;
-            document.getElementById('pressure').textContent = `${data.main.pressure} hPa`;
-            document.getElementById('wind-speed').textContent = `${data.wind.speed} m/s`;
-            document.getElementById('visibility').textContent = `${(data.visibility / 1000).toFixed(1)} km`;
-            
-            // 获取UV指数（需要额外的API调用）
-            getUVIndex(data.coord.lat, data.coord.lon)
-                .then(uvi => {
-                    document.getElementById('uvi').textContent = uvi.toFixed(1);
-                })
-                .catch(() => {
-                    document.getElementById('uvi').textContent = 'N/A';
-                });
+            document.getElementById('feels-like').textContent = temperatureRange;
+            document.getElementById('humidity').textContent = 'N/A'; // 新API没有湿度数据
+            document.getElementById('pressure').textContent = 'N/A'; // 新API没有气压数据
+            document.getElementById('wind-speed').textContent = todayWeather.wind;
+            document.getElementById('visibility').textContent = 'N/A'; // 新API没有能见度数据
+            document.getElementById('uvi').textContent = todayWeather.air_quality;
         }
 
-        // 获取UV指数
-        async function getUVIndex(lat, lon) {
-            const url = `${BASE_URL}/uvi?lat=${lat}&lon=${lon}&appid=${API_KEY}`;
-            const response = await fetch(url);
+        // 获取天气图标
+        function getWeatherIcon(weatherDescription) {
+            // 根据天气描述返回相应的图标URL
+            // 使用OpenWeatherMap的图标作为替代
+            let iconCode = '01d'; // 默认晴天图标
             
-            if (!response.ok) {
-                throw new Error('无法获取UV指数');
+            if (weatherDescription.includes('晴')) {
+                iconCode = '01d';
+            } else if (weatherDescription.includes('云')) {
+                iconCode = '02d';
+            } else if (weatherDescription.includes('雨')) {
+                iconCode = '10d';
+            } else if (weatherDescription.includes('雪')) {
+                iconCode = '13d';
+            } else if (weatherDescription.includes('阴')) {
+                iconCode = '04d';
             }
             
-            const data = await response.json();
-            return data.value;
+            return `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
         }
 
         // 显示天气预报
@@ -510,37 +510,25 @@
             const forecastList = document.getElementById('forecast-list');
             forecastList.innerHTML = '';
             
-            // 提取每日预报（取每天的中午数据）
-            const dailyForecasts = {};
+            // 使用API提供的预报数据
+            const forecasts = data.data.data;
             
-            data.list.forEach(item => {
-                const date = new Date(item.dt * 1000);
-                const dateStr = date.toISOString().split('T')[0];
-                const hour = date.getHours();
+            forecasts.forEach((item, index) => {
+                // 跳过今天的数据，因为已经在当前天气中显示
+                if (index === 0) return;
                 
-                // 只保存每天中午12点左右的数据
-                if (hour >= 11 && hour <= 14 && !dailyForecasts[dateStr]) {
-                    dailyForecasts[dateStr] = item;
-                }
-            });
-            
-            // 获取前5天的预报
-            const sortedDates = Object.keys(dailyForecasts).sort().slice(0, 5);
-            
-            sortedDates.forEach(dateStr => {
-                const item = dailyForecasts[dateStr];
                 const forecastItem = document.createElement('div');
                 forecastItem.className = 'forecast-item';
                 
-                const date = new Date(item.dt * 1000);
-                const dayName = getDayName(date);
-                const iconUrl = `https://openweathermap.org/img/wn/${item.weather[0].icon}.png`;
+                const iconUrl = getWeatherIcon(item.weather);
+                const temp = item.temperature.split('-')[0];
                 
                 forecastItem.innerHTML = `
-                    <p class="forecast-date">${dayName}</p>
-                    <img class="forecast-icon" src="${iconUrl}" alt="${item.weather[0].description}">
-                    <p class="forecast-temp">${Math.round(item.main.temp)}°</p>
-                    <p>${item.weather[0].description}</p>
+                    <p class="forecast-date">${item.date}</p>
+                    <img class="forecast-icon" src="${iconUrl}" alt="${item.weather}">
+                    <p class="forecast-temp">${temp}°</p>
+                    <p>${item.weather}</p>
+                    <p>${item.wind}</p>
                 `;
                 
                 forecastList.appendChild(forecastItem);
@@ -586,6 +574,13 @@
                 weatherForm.dispatchEvent(new Event('submit'));
             }, 500);
         });
+
+        // 更新错误信息显示
+        function showError(message) {
+            const errorEl = document.getElementById('error-message');
+            errorEl.querySelector('p').textContent = message || '无法获取天气信息，请检查城市名称是否正确或稍后再试。';
+            errorEl.style.display = 'block';
+        }
     </script>
 </body>
 </html>
