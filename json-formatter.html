@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico">
+    <title>JSON格式化工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .content {
+            padding: 20px;
+        }
+        
+        .controls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: #3a5885;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #4a6fa5;
+            color: #4a6fa5;
+        }
+        
+        .btn-outline:hover {
+            background-color: #4a6fa5;
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c0392b;
+        }
+        
+        .input-container,
+        .output-container {
+            margin-bottom: 20px;
+        }
+        
+        .label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        .textarea-container {
+            position: relative;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+        
+        textarea:focus {
+            border-color: #4a6fa5;
+            box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.2);
+        }
+        
+        .error-highlight {
+            background-color: #fee;
+            border: 1px solid #f00;
+        }
+        
+        .error-message {
+            color: #e74c3c;
+            font-size: 14px;
+            margin-top: 8px;
+            padding: 10px;
+            background-color: #fdf2f2;
+            border: 1px solid #fecaca;
+            border-radius: 4px;
+        }
+        
+        .output {
+            background-color: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            min-height: 200px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        
+        .json-key {
+            color: #0000ff;
+        }
+        
+        .json-string {
+            color: #008000;
+        }
+        
+        .json-number {
+            color: #ff0000;
+        }
+        
+        .json-boolean {
+            color: #800080;
+        }
+        
+        .json-null {
+            color: #808080;
+        }
+        
+        .json-error {
+            background-color: #fee;
+            color: #c00;
+            border-bottom: 2px solid #f00;
+        }
+        
+        .info {
+            padding: 15px;
+            background-color: #e3f2fd;
+            border: 1px solid #bbdefb;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #1565c0;
+        }
+        
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            body {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>JSON格式化工具</h1>
+        </div>
+        
+        <div class="content">
+            <div class="controls">
+                <button id="formatBtn" class="btn">格式化JSON</button>
+                <button id="minifyBtn" class="btn btn-outline">压缩JSON</button>
+                <button id="clearBtn" class="btn btn-outline">清空输入</button>
+                <button id="copyBtn" class="btn btn-outline">复制结果</button>
+                <button id="loadSampleBtn" class="btn btn-outline">加载示例</button>
+            </div>
+            
+            <div class="input-container">
+                <label for="jsonInput" class="label">请输入JSON字符串：</label>
+                <div class="textarea-container">
+                    <textarea id="jsonInput" placeholder="请在此输入或粘贴JSON字符串..."></textarea>
+                </div>
+                <div id="errorContainer" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <div class="output-container">
+                <label class="label">格式化结果：</label>
+                <pre class="output" id="jsonOutput"></pre>
+            </div>
+            
+            <div class="info">
+                <p><strong>使用说明：</strong></p>
+                <ul>
+                    <li>在左侧输入区域粘贴JSON字符串，点击"格式化JSON"按钮进行格式化</li>
+                    <li>如果JSON格式错误，将会在错误位置标红并显示详细错误信息</li>
+                    <li>使用"压缩JSON"可以移除所有不必要的空白字符</li>
+                    <li>所有操作均在本地完成，数据不会上传到服务器</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const jsonInput = document.getElementById('jsonInput');
+            const jsonOutput = document.getElementById('jsonOutput');
+            const formatBtn = document.getElementById('formatBtn');
+            const minifyBtn = document.getElementById('minifyBtn');
+            const clearBtn = document.getElementById('clearBtn');
+            const copyBtn = document.getElementById('copyBtn');
+            const loadSampleBtn = document.getElementById('loadSampleBtn');
+            const errorContainer = document.getElementById('errorContainer');
+            
+            // 格式化JSON
+            formatBtn.addEventListener('click', function() {
+                const input = jsonInput.value.trim();
+                
+                if (!input) {
+                    showError('请输入JSON字符串');
+                    return;
+                }
+                
+                try {
+                    // 清除之前的错误状态
+                    clearError();
+                    
+                    // 解析JSON
+                    const parsedJson = JSON.parse(input);
+                    
+                    // 格式化JSON并高亮显示
+                    const formattedJson = JSON.stringify(parsedJson, null, 2);
+                    displayFormattedJson(formattedJson);
+                    
+                } catch (error) {
+                    handleJsonError(error, input);
+                }
+            });
+            
+            // 压缩JSON
+            minifyBtn.addEventListener('click', function() {
+                const input = jsonInput.value.trim();
+                
+                if (!input) {
+                    showError('请输入JSON字符串');
+                    return;
+                }
+                
+                try {
+                    clearError();
+                    const parsedJson = JSON.parse(input);
+                    const minifiedJson = JSON.stringify(parsedJson);
+                    jsonOutput.textContent = minifiedJson;
+                } catch (error) {
+                    handleJsonError(error, input);
+                }
+            });
+            
+            // 清空输入
+            clearBtn.addEventListener('click', function() {
+                jsonInput.value = '';
+                jsonOutput.textContent = '';
+                clearError();
+            });
+            
+            // 复制结果
+            copyBtn.addEventListener('click', function() {
+                const textToCopy = jsonOutput.textContent;
+                if (textToCopy) {
+                    navigator.clipboard.writeText(textToCopy).then(function() {
+                        // 临时更改按钮文本以提供反馈
+                        const originalText = copyBtn.textContent;
+                        copyBtn.textContent = '已复制！';
+                        copyBtn.classList.add('btn-outline');
+                        
+                        setTimeout(function() {
+                            copyBtn.textContent = originalText;
+                            copyBtn.classList.remove('btn-outline');
+                        }, 2000);
+                    }).catch(function() {
+                        showError('复制失败，请手动复制');
+                    });
+                } else {
+                    showError('没有可复制的内容');
+                }
+            });
+            
+            // 加载示例
+            loadSampleBtn.addEventListener('click', function() {
+                const sampleJson = {
+                    "name": "JSON格式化工具",
+                    "version": "1.0.0",
+                    "description": "一个简单易用的JSON格式化工具",
+                    "features": [
+                        "格式化JSON",
+                        "压缩JSON",
+                        "错误定位",
+                        "语法高亮"
+                    ],
+                    "isOnline": true,
+                    "maxFileSize": 1048576,
+                    "author": {
+                        "name": "开发者",
+                        "email": "example@example.com"
+                    },
+                    "tags": null
+                };
+                
+                jsonInput.value = JSON.stringify(sampleJson, null, 2);
+                clearError();
+                jsonOutput.textContent = '';
+            });
+            
+            // 显示格式化后的JSON（纯文本格式）
+            function displayFormattedJson(json) {
+                jsonOutput.textContent = json;
+            }
+            
+            // 处理JSON解析错误
+            function handleJsonError(error, input) {
+                // 尝试从错误消息中提取位置信息
+                const errorMessage = error.message;
+                let errorPosition = -1;
+                
+                // 匹配常见的错误位置格式
+                const positionMatch = errorMessage.match(/at position (\d+)/) || 
+                                     errorMessage.match(/at line \d+, column (\d+)/);
+                
+                if (positionMatch) {
+                    errorPosition = parseInt(positionMatch[1]);
+                } else {
+                    // 尝试从错误消息中的其他线索推断位置
+                    // 这是一个简化的实现，实际情况可能更复杂
+                    const tokenMatch = errorMessage.match(/unexpected token (.+) at position (\d+)/i);
+                    if (tokenMatch) {
+                        errorPosition = parseInt(tokenMatch[2]);
+                    }
+                }
+                
+                // 显示错误信息
+                showError(`JSON解析错误: ${errorMessage}`);
+                
+                // 高亮错误位置
+                if (errorPosition >= 0 && errorPosition < input.length) {
+                    // 尝试找到错误位置所在的行和列
+                    const lines = input.substring(0, errorPosition).split('\n');
+                    const lineNumber = lines.length;
+                    const columnNumber = lines[lines.length - 1].length + 1;
+                    
+                    // 构建带有错误高亮的HTML
+                    let highlightedHtml = '';
+                    if (errorPosition > 0) {
+                        highlightedHtml += escapeHtml(input.substring(0, errorPosition));
+                    }
+                    
+                    // 添加错误标记
+                    const errorChar = input[errorPosition] || '';
+                    highlightedHtml += `<span class="json-error">${escapeHtml(errorChar)}</span>`;
+                    
+                    // 添加剩余文本
+                    if (errorPosition < input.length - 1) {
+                        highlightedHtml += escapeHtml(input.substring(errorPosition + 1));
+                    }
+                    
+                    // 显示带有错误标记的内容
+                    // 为了避免HTML标签显示问题，我们只使用文本格式并在错误位置前后添加标记
+                    const errorMarker = '<<<<< 错误位置 >>>>>';
+                    let errorText = '';
+                    if (errorPosition > 0) {
+                        errorText += input.substring(0, errorPosition);
+                    }
+                    errorText += errorMarker + (errorChar || '');
+                    if (errorPosition < input.length - 1) {
+                        errorText += input.substring(errorPosition + 1);
+                    }
+                    jsonOutput.textContent = errorText;
+                    
+                    // 更新错误消息，包含行号和列号
+                    showError(`JSON解析错误 (第${lineNumber}行，第${columnNumber}列): ${errorMessage}`);
+                } else {
+                    // 如果无法确定错误位置，至少显示原始错误
+                    jsonOutput.textContent = input;
+                }
+            }
+            
+            // 显示错误消息
+            function showError(message) {
+                errorContainer.textContent = message;
+                errorContainer.style.display = 'block';
+                jsonInput.classList.add('error-highlight');
+            }
+            
+            // 清除错误状态
+            function clearError() {
+                errorContainer.style.display = 'none';
+                jsonInput.classList.remove('error-highlight');
+            }
+            
+            // HTML转义函数
+            function escapeHtml(text) {
+                return text
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;')
+                    .replace(/\n/g, '<br>')
+                    .replace(/\s/g, function(match) {
+                        return match === ' ' ? '&nbsp;' : match === '\t' ? '&nbsp;&nbsp;&nbsp;&nbsp;' : match;
+                    });
+            }
+        });
+    </script>
+</body>
+</html>
