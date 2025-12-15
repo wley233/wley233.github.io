@@ -383,6 +383,60 @@
             margin-top: 10px;
         }
         
+        .page-navigation {
+            background-color: white;
+            border-top: 1px solid #ddd;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: auto;
+        }
+        
+        .page-nav-btn {
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            min-width: 120px;
+            justify-content: center;
+        }
+        
+        .page-nav-btn:hover:not(:disabled) {
+            background-color: #3a5885;
+            transform: translateY(-1px);
+        }
+        
+        .page-nav-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .page-nav-btn.prev {
+            background-color: #6c757d;
+        }
+        
+        .page-nav-btn.prev:hover:not(:disabled) {
+            background-color: #5a6268;
+        }
+        
+        .page-nav-info {
+            font-size: 14px;
+            color: #666;
+            text-align: center;
+            flex: 1;
+            margin: 0 20px;
+        }
+        
         @media (max-width: 768px) {
             .toolbar {
                 padding: 10px;
@@ -400,6 +454,23 @@
             
             h1 {
                 font-size: 20px;
+            }
+            
+            .page-navigation {
+                padding: 10px 15px;
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .page-nav-btn {
+                width: 100%;
+                min-width: unset;
+                padding: 10px 20px;
+            }
+            
+            .page-nav-info {
+                margin: 0;
+                order: -1;
             }
         }
     </style>
@@ -463,6 +534,18 @@
                 </p>
             </div>
         </div>
+        
+        <div class="page-navigation">
+            <button id="bottomPrevPage" class="page-nav-btn prev" disabled>
+                ← 上一页
+            </button>
+            <div class="page-nav-info" id="bottomPageInfo">
+                请先选择EPUB文件
+            </div>
+            <button id="bottomNextPage" class="page-nav-btn" disabled>
+                下一页 →
+            </button>
+        </div>
     </div>
 
     <script>
@@ -489,6 +572,11 @@
                 this.themeLightBtn = document.getElementById('themeLight');
                 this.themeDarkBtn = document.getElementById('themeDark');
                 
+                // 底部导航相关元素
+                this.bottomPrevBtn = document.getElementById('bottomPrevPage');
+                this.bottomNextBtn = document.getElementById('bottomNextPage');
+                this.bottomPageInfo = document.getElementById('bottomPageInfo');
+                
                 // 目录相关元素
                 this.menuToggle = document.getElementById('menuToggle');
                 this.menuBtn = document.getElementById('menuBtn');
@@ -507,6 +595,10 @@
                 this.increaseFontBtn.addEventListener('click', () => this.changeFontSize(2));
                 this.themeLightBtn.addEventListener('click', () => this.setTheme('light'));
                 this.themeDarkBtn.addEventListener('click', () => this.setTheme('dark'));
+                
+                // 底部导航相关事件
+                this.bottomPrevBtn.addEventListener('click', () => this.previousChapter());
+                this.bottomNextBtn.addEventListener('click', () => this.nextChapter());
                 
                 // 目录相关事件
                 this.menuToggle.addEventListener('click', () => this.toggleSidebar());
@@ -704,8 +796,20 @@
             }
             
             updateControls() {
+                // 更新顶部工具栏按钮
                 this.prevBtn.disabled = this.currentChapter <= 0;
                 this.nextBtn.disabled = this.currentChapter >= this.chapters.length - 1;
+                
+                // 更新底部导航按钮
+                this.bottomPrevBtn.disabled = this.currentChapter <= 0;
+                this.bottomNextBtn.disabled = this.currentChapter >= this.chapters.length - 1;
+                
+                // 更新底部页面信息
+                if (this.chapters.length > 0) {
+                    this.bottomPageInfo.textContent = `第 ${this.currentChapter + 1} 页 / 共 ${this.chapters.length} 页`;
+                } else {
+                    this.bottomPageInfo.textContent = '请先选择EPUB文件';
+                }
             }
             
             previousChapter() {
@@ -981,6 +1085,7 @@
             setTheme(theme) {
                 this.currentTheme = theme;
                 const readingArea = document.getElementById('readingArea');
+                const pageNavigation = document.querySelector('.page-navigation');
                 
                 if (theme === 'dark') {
                     readingArea.style.backgroundColor = '#1a1a1a';
@@ -989,12 +1094,26 @@
                         el.style.backgroundColor = '#2a2a2a';
                         el.style.color = '#e0e0e0';
                     });
+                    
+                    // 深色主题下底部导航栏样式
+                    pageNavigation.style.backgroundColor = '#2a2a2a';
+                    pageNavigation.style.borderTopColor = '#444';
+                    document.querySelectorAll('.page-nav-info').forEach(el => {
+                        el.style.color = '#e0e0e0';
+                    });
                 } else {
                     readingArea.style.backgroundColor = 'white';
                     readingArea.style.color = '#333';
                     document.querySelectorAll('.book-info').forEach(el => {
                         el.style.backgroundColor = '#f9f9f9';
                         el.style.color = '#333';
+                    });
+                    
+                    // 浅色主题下底部导航栏样式
+                    pageNavigation.style.backgroundColor = 'white';
+                    pageNavigation.style.borderTopColor = '#ddd';
+                    document.querySelectorAll('.page-nav-info').forEach(el => {
+                        el.style.color = '#666';
                     });
                 }
             }
