@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico">
+    <title>Netwalk游戏</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f5f5;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            padding-bottom: 20px;
+        }
+        
+        .header {
+            background-color: #4a6fa5;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .header .subtitle {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .game-container {
+            display: flex;
+            gap: 20px;
+            padding: 0 20px;
+            align-items: flex-start;
+        }
+        
+        .game-board {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .board {
+            display: grid;
+            gap: 2px;
+            background-color: #e0e0e0;
+            padding: 2px;
+            border-radius: 4px;
+            position: relative;
+            margin: 20px 0;
+        }
+        
+        .cell {
+            width: 40px;
+            height: 40px;
+            background-color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            border-radius: 2px;
+        }
+        
+        .cell:hover {
+            background-color: #f0f0f0;
+            transform: scale(0.95);
+        }
+        
+        .cell.connected {
+            background-color: #e8f5e9;
+        }
+        
+        .cell.server {
+            background-color: #fff3e0;
+        }
+        
+        .cell.server.connected {
+            background-color: #c8e6c9;
+        }
+        
+        .pipe {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+        
+        .pipe-line {
+            position: absolute;
+            background-color: #4a6fa5;
+            transition: all 0.3s ease;
+        }
+        
+        .pipe-line.active {
+            background-color: #4caf50;
+            box-shadow: 0 0 4px rgba(76, 175, 80, 0.5);
+        }
+        
+        .pipe-line.vertical {
+            width: 4px;
+            height: 50%;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        
+        .pipe-line.vertical.bottom {
+            bottom: 0;
+        }
+        
+        .pipe-line.horizontal {
+            width: 50%;
+            height: 4px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        
+        .pipe-line.horizontal.right {
+            right: 0;
+        }
+        
+        .server-icon {
+            width: 80%;
+            height: 80%;
+            background-color: #ff9800;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+            margin: auto;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .client-icon {
+            width: 60%;
+            height: 60%;
+            background-color: #2196f3;
+            border-radius: 25%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            margin: auto;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        
+        .client-icon.connected {
+            background-color: #4caf50;
+        }
+        
+        .game-sidebar {
+            width: 300px;
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            background-color: #4a6fa5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .btn:hover {
+            background-color: #3a5885;
+        }
+        
+        .btn-outline {
+            background-color: transparent;
+            border: 1px solid #4a6fa5;
+            color: #4a6fa5;
+        }
+        
+        .btn-outline:hover {
+            background-color: #4a6fa5;
+            color: white;
+        }
+        
+        .level-selector {
+            margin-bottom: 20px;
+        }
+        
+        .level-selector label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+        
+        select {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .stats {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        
+        .stat-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .stat-value {
+            font-weight: 600;
+            color: #4a6fa5;
+        }
+        
+        .instructions {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            line-height: 1.5;
+            border: 1px solid #e9ecef;
+        }
+        
+        .instructions h3 {
+            margin-bottom: 10px;
+            color: #4a6fa5;
+        }
+        
+        .instructions ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .instructions li {
+            margin-bottom: 5px;
+        }
+        
+        .message {
+            text-align: center;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 4px;
+            font-size: 18px;
+            font-weight: 600;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .game-container {
+                flex-direction: column;
+            }
+            
+            .game-sidebar {
+                width: 100%;
+            }
+            
+            .cell {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Netwalk游戏</h1>
+            <p class="subtitle">旋转管道，连接所有设备到服务器</p>
+        </div>
+        
+        <div id="message" class="message"></div>
+        
+        <div class="game-container">
+            <div class="game-board">
+                <div class="controls">
+                    <button id="newGameBtn" class="btn">新游戏</button>
+                    <button id="checkBtn" class="btn btn-outline">检查连接</button>
+                    <button id="solveBtn" class="btn btn-outline">显示答案</button>
+                </div>
+                
+                <div id="board" class="board"></div>
+            </div>
+            
+            <div class="game-sidebar">
+                <div class="level-selector">
+                    <label for="levelSelect">游戏难度：</label>
+                    <select id="levelSelect">
+                        <option value="5">简单 (5x5)</option>
+                        <option value="7" selected>中等 (7x7)</option>
+                        <option value="9">困难 (9x9)</option>
+                        <option value="11">专家 (11x11)</option>
+                    </select>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-item">
+                        <span>当前关卡：</span>
+                        <span class="stat-value" id="currentLevel">7x7</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>旋转次数：</span>
+                        <span class="stat-value" id="moveCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>已连接设备：</span>
+                        <span class="stat-value" id="connectedCount">0/0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span>游戏时间：</span>
+                        <span class="stat-value" id="gameTime">00:00</span>
+                    </div>
+                </div>
+                
+                <div class="instructions">
+                    <h3>游戏说明</h3>
+                    <ul>
+                        <li>点击管道可以将其旋转90度</li>
+                        <li>橙色圆形是服务器（起点）</li>
+                        <li>蓝色方形是客户端（需要连接的设备）</li>
+                        <li>将所有客户端连接到服务器即可过关</li>
+                        <li>绿色表示已成功连接</li>
+                        <li>尽量用最少的旋转次数完成挑战</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        class NetwalkGame {
+            constructor() {
+                this.size = 7;
+                this.grid = [];
+                this.serverPos = null;
+                this.clientPos = [];
+                this.moveCount = 0;
+                this.startTime = Date.now();
+                this.timerInterval = null;
+                this.solvedGrid = null;
+                
+                this.pipeTypes = {
+                    STRAIGHT: 'straight',
+                    CORNER: 'corner',
+                    CROSS: 'cross',
+                    EMPTY: 'empty'
+                };
+                
+                this.initElements();
+                this.bindEvents();
+                this.newGame();
+            }
+            
+            initElements() {
+                this.boardEl = document.getElementById('board');
+                this.newGameBtn = document.getElementById('newGameBtn');
+                this.checkBtn = document.getElementById('checkBtn');
+                this.solveBtn = document.getElementById('solveBtn');
+                this.levelSelect = document.getElementById('levelSelect');
+                this.messageEl = document.getElementById('message');
+                
+                this.moveCountEl = document.getElementById('moveCount');
+                this.connectedCountEl = document.getElementById('connectedCount');
+                this.gameTimeEl = document.getElementById('gameTime');
+                this.currentLevelEl = document.getElementById('currentLevel');
+            }
+            
+            bindEvents() {
+                this.newGameBtn.addEventListener('click', () => this.newGame());
+                this.checkBtn.addEventListener('click', () => this.checkConnections());
+                this.solveBtn.addEventListener('click', () => this.showSolution());
+                this.levelSelect.addEventListener('change', (e) => {
+                    this.size = parseInt(e.target.value);
+                    this.newGame();
+                });
+            }
+            
+            newGame() {
+                this.moveCount = 0;
+                this.startTime = Date.now();
+                this.solvedGrid = null;
+                this.hideMessage();
+                this.generatePuzzle();
+                this.render();
+                this.updateStats();
+                this.startTimer();
+                this.currentLevelEl.textContent = `${this.size}x${this.size}`;
+            }
+            
+            startTimer() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                }
+                
+                this.timerInterval = setInterval(() => {
+                    this.updateTimer();
+                }, 1000);
+            }
+            
+            updateTimer() {
+                const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                this.gameTimeEl.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }
+            
+            generatePuzzle() {
+                this.grid = [];
+                this.serverPos = null;
+                this.clientPos = [];
+                
+                for (let y = 0; y < this.size; y++) {
+                    this.grid[y] = [];
+                    for (let x = 0; x < this.size; x++) {
+                        this.grid[y][x] = {
+                            type: this.pipeTypes.EMPTY,
+                            rotation: 0,
+                            connections: [false, false, false, false],
+                            isServer: false,
+                            isClient: false
+                        };
+                    }
+                }
+                
+                const center = Math.floor(this.size / 2);
+                this.addServer(center, center);
+                
+                const clientCount = Math.floor(this.size * 1.5);
+                this.addRandomClients(clientCount);
+                
+                this.generateMaze();
+                
+                this.solvedGrid = JSON.parse(JSON.stringify(this.grid));
+                
+                this.scramblePuzzle();
+            }
+            
+            addServer(x, y) {
+                this.serverPos = { x, y };
+                this.grid[y][x].isServer = true;
+                this.grid[y][x].type = this.pipeTypes.CROSS;
+                this.grid[y][x].connections = [true, true, true, true];
+            }
+            
+            addRandomClients(count) {
+                const positions = [];
+                for (let y = 0; y < this.size; y++) {
+                    for (let x = 0; x < this.size; x++) {
+                        if (!this.grid[y][x].isServer) {
+                            positions.push({ x, y });
+                        }
+                    }
+                }
+                
+                for (let i = 0; i < count && positions.length > 0; i++) {
+                    const idx = Math.floor(Math.random() * positions.length);
+                    const pos = positions.splice(idx, 1)[0];
+                    this.addClient(pos.x, pos.y);
+                }
+            }
+            
+            addClient(x, y) {
+                this.grid[y][x].isClient = true;
+                this.clientPos.push({ x, y });
+            }
+            
+            generateMaze() {
+                const visited = new Set();
+                const stack = [];
+                
+                if (this.serverPos) {
+                    stack.push(this.serverPos);
+                    visited.add(`${this.serverPos.x},${this.serverPos.y}`);
+                }
+                
+                while (stack.length > 0) {
+                    const current = stack[stack.length - 1];
+                    const neighbors = this.getUnvisitedNeighbors(current.x, current.y, visited);
+                    
+                    if (neighbors.length > 0) {
+                        const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                        this.connectNodes(current.x, current.y, next.x, next.y);
+                        visited.add(`${next.x},${next.y}`);
+                        stack.push(next);
+                    } else {
+                        stack.pop();
+                    }
+                }
+                
+                this.fillEmptyCells();
+            }
+            
+            getUnvisitedNeighbors(x, y, visited) {
+                const neighbors = [];
+                const directions = [
+                    { x: 0, y: -1, dir: 0 },
+                    { x: 1, y: 0, dir: 1 },
+                    { x: 0, y: 1, dir: 2 },
+                    { x: -1, y: 0, dir: 3 }
+                ];
+                
+                for (const d of directions) {
+                    const nx = x + d.x;
+                    const ny = y + d.y;
+                    if (nx >= 0 && nx < this.size && ny >= 0 && ny < this.size && !visited.has(`${nx},${ny}`)) {
+                        neighbors.push({ x: nx, y: ny, dir: d.dir, opposite: (d.dir + 2) % 4 });
+                    }
+                }
+                
+                return neighbors;
+            }
+            
+            connectNodes(x1, y1, x2, y2) {
+                const dx = x2 - x1;
+                const dy = y2 - y1;
+                
+                let dir1, dir2;
+                if (dx === 1) {
+                    dir1 = 1;
+                    dir2 = 3;
+                } else if (dx === -1) {
+                    dir1 = 3;
+                    dir2 = 1;
+                } else if (dy === 1) {
+                    dir1 = 2;
+                    dir2 = 0;
+                } else if (dy === -1) {
+                    dir1 = 0;
+                    dir2 = 2;
+                }
+                
+                this.grid[y1][x1].connections[dir1] = true;
+                this.grid[y2][x2].connections[dir2] = true;
+                
+                this.updatePipeType(this.grid[y1][x1]);
+                this.updatePipeType(this.grid[y2][x2]);
+            }
+            
+            updatePipeType(cell) {
+                const connCount = cell.connections.filter(c => c).length;
+                
+                if (connCount === 0) {
+                    cell.type = this.pipeTypes.EMPTY;
+                } else if (connCount === 1) {
+                    cell.connections = [true, true, true, true];
+                    cell.type = this.pipeTypes.CROSS;
+                } else if (connCount === 2) {
+                    if ((cell.connections[0] && cell.connections[2]) || (cell.connections[1] && cell.connections[3])) {
+                        cell.type = this.pipeTypes.STRAIGHT;
+                        cell.rotation = cell.connections[1] ? 90 : 0;
+                    } else {
+                        cell.type = this.pipeTypes.CORNER;
+                        if (cell.connections[0] && cell.connections[1]) cell.rotation = 0;
+                        else if (cell.connections[1] && cell.connections[2]) cell.rotation = 90;
+                        else if (cell.connections[2] && cell.connections[3]) cell.rotation = 180;
+                        else if (cell.connections[3] && cell.connections[0]) cell.rotation = 270;
+                    }
+                } else if (connCount === 3 || connCount === 4) {
+                    cell.connections = [true, true, true, true];
+                    cell.type = this.pipeTypes.CROSS;
+                    cell.rotation = 0;
+                }
+            }
+            
+            fillEmptyCells() {
+                for (let y = 0; y < this.size; y++) {
+                    for (let x = 0; x < this.size; x++) {
+                        const cell = this.grid[y][x];
+                        if (!cell.isServer && !cell.isClient && cell.type === this.pipeTypes.EMPTY) {
+                            const r = Math.random();
+                            if (r < 0.3) {
+                                cell.type = this.pipeTypes.STRAIGHT;
+                                cell.connections = [true, false, true, false];
+                                cell.rotation = Math.random() < 0.5 ? 0 : 90;
+                            } else if (r < 0.6) {
+                                cell.type = this.pipeTypes.CORNER;
+                                cell.connections = [true, true, false, false];
+                                cell.rotation = Math.floor(Math.random() * 4) * 90;
+                            } else {
+                                cell.type = this.pipeTypes.EMPTY;
+                                cell.connections = [false, false, false, false];
+                            }
+                        }
+                    }
+                }
+            }
+            
+            scramblePuzzle() {
+                for (let y = 0; y < this.size; y++) {
+                    for (let x = 0; x < this.size; x++) {
+                        const cell = this.grid[y][x];
+                        if (!cell.isServer) {
+                            const rotations = Math.floor(Math.random() * 4);
+                            for (let i = 0; i < rotations; i++) {
+                                this.rotateCell(x, y, false);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            rotateCell(x, y, countMove = true) {
+                const cell = this.grid[y][x];
+                if (cell.isServer) return;
+                
+                cell.rotation = (cell.rotation + 90) % 360;
+                
+                if (cell.type === this.pipeTypes.STRAIGHT) {
+                    const temp = cell.connections[0];
+                    cell.connections[0] = cell.connections[1];
+                    cell.connections[1] = cell.connections[2];
+                    cell.connections[2] = cell.connections[3];
+                    cell.connections[3] = temp;
+                } else if (cell.type === this.pipeTypes.CORNER) {
+                    const temp = cell.connections[0];
+                    cell.connections[0] = cell.connections[3];
+                    cell.connections[3] = cell.connections[2];
+                    cell.connections[2] = cell.connections[1];
+                    cell.connections[1] = temp;
+                }
+                
+                if (countMove) {
+                    this.moveCount++;
+                    this.updateStats();
+                }
+            }
+            
+            checkConnections() {
+                if (!this.serverPos) return;
+                
+                const visited = new Set();
+                const connectedClients = new Set();
+                
+                const queue = [{ ...this.serverPos }];
+                visited.add(`${this.serverPos.x},${this.serverPos.y}`);
+                
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    
+                    if (this.grid[current.y][current.x].isClient) {
+                        connectedClients.add(`${current.x},${current.y}`);
+                    }
+                    
+                    const directions = [
+                        { x: 0, y: -1, dir: 0 },
+                        { x: 1, y: 0, dir: 1 },
+                        { x: 0, y: 1, dir: 2 },
+                        { x: -1, y: 0, dir: 3 }
+                    ];
+                    
+                    for (const d of directions) {
+                        const nx = current.x + d.x;
+                        const ny = current.y + d.y;
+                        
+                        if (nx >= 0 && nx < this.size && ny >= 0 && ny < this.size &&
+                            !visited.has(`${nx},${ny}`)) {
+                            
+                            const currentCell = this.grid[current.y][current.x];
+                            const nextCell = this.grid[ny][nx];
+                            
+                            if (currentCell.connections[d.dir] && nextCell.connections[(d.dir + 2) % 4]) {
+                                visited.add(`${nx},${ny}`);
+                                queue.push({ x: nx, y: ny });
+                            }
+                        }
+                    }
+                }
+                
+                this.highlightConnections(visited);
+                this.updateConnectedCount(connectedClients.size);
+                
+                if (connectedClients.size === this.clientPos.length) {
+                    this.showSuccess();
+                }
+            }
+            
+            highlightConnections(connectedCells) {
+                for (let y = 0; y < this.size; y++) {
+                    for (let x = 0; x < this.size; x++) {
+                        const isConnected = connectedCells.has(`${x},${y}`);
+                        this.grid[y][x].isConnected = isConnected;
+                    }
+                }
+                this.render();
+            }
+            
+            updateStats() {
+                this.moveCountEl.textContent = this.moveCount;
+                this.checkConnections();
+            }
+            
+            updateConnectedCount(connected) {
+                this.connectedCountEl.textContent = `${connected}/${this.clientPos.length}`;
+            }
+            
+            showSolution() {
+                if (this.solvedGrid) {
+                    this.grid = JSON.parse(JSON.stringify(this.solvedGrid));
+                    this.render();
+                    this.checkConnections();
+                    this.showMessage('已显示答案！', 'info');
+                }
+            }
+            
+            showSuccess() {
+                if (this.timerInterval) {
+                    clearInterval(this.timerInterval);
+                    this.timerInterval = null;
+                }
+                
+                const elapsed = Math.floor((Date.now() - this.startTime) / 1000);
+                const minutes = Math.floor(elapsed / 60);
+                const seconds = elapsed % 60;
+                const timeStr = `${minutes}分${seconds}秒`;
+                
+                this.showMessage(`🎉 恭喜过关！用时${timeStr}，旋转${this.moveCount}次`, 'success');
+            }
+            
+            showMessage(text, type) {
+                this.messageEl.textContent = text;
+                this.messageEl.className = `message ${type}`;
+            }
+            
+            hideMessage() {
+                this.messageEl.style.display = 'none';
+            }
+            
+            render() {
+                this.boardEl.innerHTML = '';
+                this.boardEl.style.gridTemplateColumns = `repeat(${this.size}, 1fr)`;
+                
+                for (let y = 0; y < this.size; y++) {
+                    for (let x = 0; x < this.size; x++) {
+                        const cell = this.grid[y][x];
+                        const cellEl = document.createElement('div');
+                        cellEl.className = 'cell';
+                        cellEl.dataset.x = x;
+                        cellEl.dataset.y = y;
+                        
+                        if (cell.isConnected) {
+                            cellEl.classList.add('connected');
+                        }
+                        if (cell.isServer) {
+                            cellEl.classList.add('server');
+                        }
+                        
+                        if (cell.isServer) {
+                            const serverIcon = document.createElement('div');
+                            serverIcon.className = 'server-icon';
+                            serverIcon.textContent = 'S';
+                            cellEl.appendChild(serverIcon);
+                        } else if (cell.isClient) {
+                            const clientIcon = document.createElement('div');
+                            clientIcon.className = 'client-icon';
+                            clientIcon.textContent = 'C';
+                            if (cell.isConnected) {
+                                clientIcon.classList.add('connected');
+                            }
+                            cellEl.appendChild(clientIcon);
+                        } else if (cell.type !== this.pipeTypes.EMPTY) {
+                            const pipeEl = this.createPipeElement(cell);
+                            cellEl.appendChild(pipeEl);
+                        }
+                        
+                        cellEl.addEventListener('click', () => {
+                            this.rotateCell(x, y);
+                            this.render();
+                            this.checkConnections();
+                        });
+                        
+                        this.boardEl.appendChild(cellEl);
+                    }
+                }
+            }
+            
+            createPipeElement(cell) {
+                const pipe = document.createElement('div');
+                pipe.className = 'pipe';
+                pipe.style.transform = `rotate(${cell.rotation}deg)`;
+                
+                if (cell.type === this.pipeTypes.STRAIGHT) {
+                    if (cell.connections[0] && cell.connections[2]) {
+                        const line1 = document.createElement('div');
+                        line1.className = `pipe-line vertical ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line1);
+                    }
+                    if (cell.connections[1] && cell.connections[3]) {
+                        const line2 = document.createElement('div');
+                        line2.className = `pipe-line horizontal ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line2);
+                    }
+                } else if (cell.type === this.pipeTypes.CORNER) {
+                    if (cell.connections[0]) {
+                        const line1 = document.createElement('div');
+                        line1.className = `pipe-line vertical ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line1);
+                    }
+                    if (cell.connections[1]) {
+                        const line2 = document.createElement('div');
+                        line2.className = `pipe-line horizontal right ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line2);
+                    }
+                    if (cell.connections[2]) {
+                        const line3 = document.createElement('div');
+                        line3.className = `pipe-line vertical bottom ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line3);
+                    }
+                    if (cell.connections[3]) {
+                        const line4 = document.createElement('div');
+                        line4.className = `pipe-line horizontal ${cell.isConnected ? 'active' : ''}`;
+                        pipe.appendChild(line4);
+                    }
+                } else if (cell.type === this.pipeTypes.CROSS) {
+                    const line1 = document.createElement('div');
+                    line1.className = `pipe-line vertical ${cell.isConnected ? 'active' : ''}`;
+                    pipe.appendChild(line1);
+                    const line2 = document.createElement('div');
+                    line2.className = `pipe-line horizontal ${cell.isConnected ? 'active' : ''}`;
+                    pipe.appendChild(line2);
+                }
+                
+                return pipe;
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            new NetwalkGame();
+        });
+    </script>
+</body>
+</html>
