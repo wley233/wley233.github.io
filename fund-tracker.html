@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="favicon.ico">
+    <title>基金实时估值 - WLeY</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #764ba2;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+        }
+
+        .background-shapes {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .shape {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.1;
+            animation: float 20s infinite ease-in-out;
+        }
+
+        .shape-1 {
+            width: 300px;
+            height: 300px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            top: -100px;
+            left: -100px;
+        }
+
+        .shape-2 {
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, #f093fb, #f5576c);
+            top: 50%;
+            right: -50px;
+            animation-delay: -5s;
+        }
+
+        .shape-3 {
+            width: 250px;
+            height: 250px;
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            bottom: -80px;
+            left: 30%;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-30px) rotate(10deg); }
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s ease;
+        }
+
+        .logo-icon:hover {
+            transform: scale(1.1);
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 30px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            animation: fadeInUp 0.6s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .add-form {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .input-group {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-sm {
+            padding: 8px 12px;
+            font-size: 14px;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 16px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #374151;
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s ease;
+        }
+
+        th:hover {
+            background: #f1f5f9;
+        }
+
+        th .sort-icon {
+            margin-left: 6px;
+            opacity: 0.4;
+            transition: opacity 0.2s ease;
+        }
+
+        th.sorted .sort-icon {
+            opacity: 1;
+        }
+
+        tr:hover {
+            background: #f8fafc;
+        }
+
+        .fund-name {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        .fund-code {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .price {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .change {
+            font-weight: 600;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-block;
+            min-width: 80px;
+            text-align: center;
+        }
+
+        .change.up {
+            background: #fef2f2;
+            color: var(--danger);
+        }
+
+        .change.down {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .change.zero {
+            background: #f9fafb;
+            color: #6b7280;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            color: #374151;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            margin-bottom: 20px;
+        }
+
+        .refresh-time {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 15px;
+            text-align: right;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-size: 15px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        .tips {
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 20px;
+            font-size: 14px;
+            color: #0369a1;
+        }
+
+        .tips strong {
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .summary-bar {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .summary-label {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .summary-value.up { color: var(--danger); }
+        .summary-value.down { color: var(--success); }
+
+        @media (max-width: 768px) {
+            header {
+                padding: 15px 20px;
+            }
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .container {
+                padding: 20px 15px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .add-form {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            th, td {
+                padding: 12px 8px;
+                font-size: 14px;
+            }
+
+            .change {
+                padding: 4px 8px;
+                min-width: 60px;
+                font-size: 13px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-shapes">
+        <div class="shape shape-1"></div>
+        <div class="shape shape-2"></div>
+        <div class="shape shape-3"></div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <a href="index.html" class="logo-icon" title="返回首页">⚡</a>
+            <h1>基金实时估值</h1>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="refreshAll()">
+            <span id="refreshBtn">🔄 刷新</span>
+        </button>
+    </header>
+
+    <div class="container">
+        <div class="card">
+            <div class="card-title">📝 添加基金</div>
+            <div class="add-form">
+                <div class="input-group">
+                    <label>基金代码 *</label>
+                    <input type="text" id="fundCode" placeholder="例如：005827" maxlength="6" onkeypress="if(event.key==='Enter')addFund()">
+                </div>
+                <div class="input-group">
+                    <label>基金名称（可选）</label>
+                    <input type="text" id="fundName" placeholder="留空将自动获取" onkeypress="if(event.key==='Enter')addFund()">
+                </div>
+                <div style="display: flex; align-items: flex-end;">
+                    <button class="btn btn-primary" onclick="addFund()">
+                        ➕ 添加
+                    </button>
+                </div>
+            </div>
+            <div class="tips">
+                <strong>💡 提示</strong>
+                基金代码为6位数字，如 016858、005827（易方达蓝筹）、161725（招商白酒）。只需输入代码，名称将自动获取。
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="summary-bar" id="summaryBar" style="display: none;">
+                <div class="summary-item">
+                    <span class="summary-label">基金数量</span>
+                    <span class="summary-value" id="fundCount">0</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">今日收益</span>
+                    <span class="summary-value" id="totalChange">--</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">涨跌基金</span>
+                    <span class="summary-value" id="riseFall">--</span>
+                </div>
+            </div>
+
+            <div class="card-title">
+                📊 基金列表
+                <span style="font-size: 14px; color: #6b7280; font-weight: normal; margin-left: auto;">
+                    点击表头可排序
+                </span>
+            </div>
+
+            <div class="table-container">
+                <table id="fundTable">
+                    <thead>
+                        <tr>
+                            <th data-sort="name">基金名称 <span class="sort-icon">↕</span></th>
+                            <th data-sort="code">基金代码 <span class="sort-icon">↕</span></th>
+                            <th data-sort="price">最新净值 <span class="sort-icon">↕</span></th>
+                            <th data-sort="change">日涨跌幅 <span class="sort-icon">↕</span></th>
+                            <th data-sort="time">估算时间 <span class="sort-icon">↕</span></th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="fundTableBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="empty-state" id="emptyState">
+                <div class="empty-state-icon">📈</div>
+                <h3>暂无基金</h3>
+                <p>添加你关注的基金，随时查看实时估值</p>
+                <button class="btn btn-primary" onclick="document.getElementById('fundCode').focus()">
+                    ➕ 添加第一个基金
+                </button>
+            </div>
+
+            <div class="refresh-time" id="refreshTime"></div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const STORAGE_KEY = 'wley_fund_list';
+        let funds = [];
+        let sortField = 'name';
+        let sortAsc = true;
+        let fundDataCache = {};
+
+        // 初始化
+        function init() {
+            loadFunds();
+            setupSortHandlers();
+            renderTable();
+            if (funds.length > 0) {
+                refreshAll();
+            }
+        }
+
+        // 从 localStorage 加载基金列表
+        function loadFunds() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved) {
+                    funds = JSON.parse(saved);
+                }
+            } catch (e) {
+                console.error('加载基金数据失败:', e);
+                funds = [];
+            }
+        }
+
+        // 保存基金列表到 localStorage
+        function saveFunds() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(funds));
+            } catch (e) {
+                console.error('保存基金数据失败:', e);
+                showToast('保存失败，请检查浏览器存储空间', 'error');
+            }
+        }
+
+        // 添加基金
+        function addFund() {
+            const codeInput = document.getElementById('fundCode');
+            const nameInput = document.getElementById('fundName');
+            const code = codeInput.value.trim();
+            const name = nameInput.value.trim() || code; // 如果没输入名称，用代码代替
+
+            if (!code || !/^\d{6}$/.test(code)) {
+                showToast('请输入正确的6位基金代码', 'error');
+                codeInput.focus();
+                return;
+            }
+
+            if (funds.find(f => f.code === code)) {
+                showToast('该基金已添加', 'error');
+                return;
+            }
+
+            funds.push({ code, name });
+            saveFunds();
+            renderTable();
+            fetchFundData(code);
+
+            codeInput.value = '';
+            nameInput.value = '';
+            codeInput.focus();
+
+            showToast(`正在添加 ${name || code}...`, 'success');
+        }
+
+        // 删除基金
+        function deleteFund(code) {
+            const fund = funds.find(f => f.code === code);
+            if (!fund) return;
+
+            if (confirm(`确定要删除 ${fund.name} 吗？`)) {
+                funds = funds.filter(f => f.code !== code);
+                delete fundDataCache[code];
+                saveFunds();
+                renderTable();
+                showToast(`已删除 ${fund.name}`, 'success');
+            }
+        }
+
+        // 渲染表格
+        function renderTable() {
+            const tbody = document.getElementById('fundTableBody');
+            const emptyState = document.getElementById('emptyState');
+            const summaryBar = document.getElementById('summaryBar');
+
+            if (funds.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                summaryBar.style.display = 'none';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            summaryBar.style.display = 'flex';
+
+            // 排序
+            const sorted = [...funds].sort((a, b) => {
+                let valA, valB;
+                const dataA = fundDataCache[a.code];
+                const dataB = fundDataCache[b.code];
+
+                switch (sortField) {
+                    case 'name':
+                        valA = a.name.toLowerCase();
+                        valB = b.name.toLowerCase();
+                        break;
+                    case 'code':
+                        valA = a.code;
+                        valB = b.code;
+                        break;
+                    case 'price':
+                        valA = dataA ? parseFloat(dataA.dwjz) : 0;
+                        valB = dataB ? parseFloat(dataB.dwjz) : 0;
+                        break;
+                    case 'change':
+                        valA = dataA ? parseFloat(dataA.gszzl) : 0;
+                        valB = dataB ? parseFloat(dataB.gszzl) : 0;
+                        break;
+                    case 'time':
+                        valA = dataA ? dataA.gztime : '';
+                        valB = dataB ? dataB.gztime : '';
+                        break;
+                    default:
+                        valA = a.name;
+                        valB = b.name;
+                }
+
+                if (typeof valA === 'string') {
+                    return sortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                }
+                return sortAsc ? valA - valB : valB - valA;
+            });
+
+            // 更新表头排序状态
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.classList.toggle('sorted', th.dataset.sort === sortField);
+                th.querySelector('.sort-icon').textContent = th.dataset.sort === sortField ? (sortAsc ? '↑' : '↓') : '↕';
+            });
+
+            // 渲染行
+            tbody.innerHTML = sorted.map(fund => {
+                const data = fundDataCache[fund.code];
+                const price = data ? data.dwjz : '--';
+                const change = data ? parseFloat(data.gszzl) : null;
+                const time = data ? data.gztime : '--';
+                const gztime = data ? data.gztime : '';
+
+                let changeClass = 'zero';
+                let changeText = '--';
+
+                if (change !== null) {
+                    if (change > 0) {
+                        changeClass = 'up';
+                        changeText = `+${change.toFixed(2)}%`;
+                    } else if (change < 0) {
+                        changeClass = 'down';
+                        changeText = `${change.toFixed(2)}%`;
+                    } else {
+                        changeText = '0.00%';
+                    }
+                }
+
+                return `
+                    <tr data-code="${fund.code}">
+                        <td>
+                            <div class="fund-name">${fund.name}</div>
+                        </td>
+                        <td>
+                            <span class="fund-code">${fund.code}</span>
+                        </td>
+                        <td>
+                            <span class="price">${price}</span>
+                        </td>
+                        <td>
+                            <span class="change ${changeClass}">${changeText}</span>
+                        </td>
+                        <td title="${gztime}">
+                            ${time}
+                        </td>
+                        <td>
+                            <div class="actions">
+                                <button class="btn btn-secondary btn-sm" onclick="fetchFundData('${fund.code}')" title="刷新">
+                                    🔄
+                                </button>
+                                <button class="btn btn-danger btn-sm" onclick="deleteFund('${fund.code}')" title="删除">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // 更新摘要
+            updateSummary();
+        }
+
+        // 更新摘要栏
+        function updateSummary() {
+            document.getElementById('fundCount').textContent = funds.length;
+
+            const changes = funds
+                .map(f => fundDataCache[f.code])
+                .filter(d => d && d.gszzl)
+                .map(d => parseFloat(d.gszzl));
+
+            if (changes.length === 0) {
+                document.getElementById('totalChange').textContent = '--';
+                document.getElementById('totalChange').className = 'summary-value';
+                document.getElementById('riseFall').textContent = '--';
+                return;
+            }
+
+            const rising = changes.filter(c => c > 0).length;
+            const falling = changes.filter(c => c < 0).length;
+            document.getElementById('riseFall').textContent = `↑${rising} ↓${falling}`;
+
+            const avgChange = changes.reduce((a, b) => a + b, 0) / changes.length;
+            const totalEl = document.getElementById('totalChange');
+            totalEl.textContent = avgChange >= 0 ? `+${avgChange.toFixed(2)}%` : `${avgChange.toFixed(2)}%`;
+            totalEl.className = 'summary-value ' + (avgChange >= 0 ? 'up' : 'down');
+        }
+
+        // 获取基金数据
+        async function fetchFundData(code) {
+            try {
+                // 天天基金实时估值 API
+                const timestamp = Date.now();
+                const url = `https://fundgz.1234567.com.cn/js/${code}.js?rt=${timestamp}&callback=jsonpgz`;
+
+                // 使用 JSONP 方式获取数据
+                window.jsonpgz = function(data) {
+                    if (data && data.fundcode === code) {
+                        fundDataCache[code] = {
+                            dwjz: data.dwjz,
+                            gsz: data.gsz,
+                            gszzl: data.gszzl,
+                            gztime: data.gztime,
+                            name: data.name
+                        };
+                        // 如果本地没有名称或名称为空，用 API 返回的名称更新
+                        const fund = funds.find(f => f.code === code);
+                        if (fund && (!fund.name || fund.name === code)) {
+                            fund.name = data.name;
+                            saveFunds();
+                        }
+                        renderTable();
+                    }
+                    delete window.jsonpgz;
+                };
+
+                // 设置超时
+                const timeout = setTimeout(() => {
+                    delete window.jsonpgz;
+                    showToast(`获取 ${code} 数据超时`, 'error');
+                }, 5000);
+
+                const script = document.createElement('script');
+                script.src = url;
+                script.onload = () => clearTimeout(timeout);
+                script.onerror = () => {
+                    clearTimeout(timeout);
+                    delete window.jsonpgz;
+                    showToast(`获取 ${code} 数据失败`, 'error');
+                };
+                document.head.appendChild(script);
+                document.head.removeChild(script);
+
+            } catch (e) {
+                console.error('获取基金数据失败:', e);
+            }
+        }
+
+        // 刷新所有基金
+        function refreshAll() {
+            if (funds.length === 0) return;
+
+            const btn = document.getElementById('refreshBtn');
+            btn.innerHTML = '<span class="loading"></span> 刷新中';
+
+            let completed = 0;
+            funds.forEach((fund, index) => {
+                setTimeout(() => {
+                    fetchFundData(fund.code);
+                    completed++;
+                    if (completed === funds.length) {
+                        setTimeout(() => {
+                            btn.innerHTML = '🔄 刷新';
+                            document.getElementById('refreshTime').textContent =
+                                `最后更新: ${new Date().toLocaleTimeString()}`;
+                        }, 1000);
+                    }
+                }, index * 200);
+            });
+        }
+
+        // 设置排序
+        function setupSortHandlers() {
+            document.querySelectorAll('th[data-sort]').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.dataset.sort;
+                    if (sortField === field) {
+                        sortAsc = !sortAsc;
+                    } else {
+                        sortField = field;
+                        sortAsc = true;
+                    }
+                    renderTable();
+                });
+            });
+        }
+
+        // 显示提示
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type + ' show';
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // 启动
+        init();
+
+        // 每 60 秒自动刷新
+        setInterval(() => {
+            if (funds.length > 0) {
+                refreshAll();
+            }
+        }, 60000);
+    </script>
+</body>
+</html>
